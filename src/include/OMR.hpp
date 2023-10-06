@@ -13,6 +13,7 @@ class OMR
     private:
         void getImage();
     public:
+        OMR();
         OMR(cv::VideoCapture* camera);
         int run();      
 };

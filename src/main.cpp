@@ -7,14 +7,14 @@
 int main()
 {
 	cv::VideoCapture camera;
-	CLI cli;
+	// CLI cli;
 
 	// if(cli.startCLI(camera) == false)
 	// 	return -1;
 	
-	if(cli.autoStart(camera) == false)
-		return -1;
+	// if(cli.autoStart(camera) == false)
+	// 	return -1;
 
-	OMR omr(&camera);
+	OMR omr;
 	return omr.run();
 }
