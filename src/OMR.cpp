@@ -3,31 +3,31 @@
 
 
 OMR::OMR()
-:cameraPointer(nullptr)
+:_cameraPointer(nullptr)
 {
-
+    _baseImage = cv::imread("rsrc/base.jpg");
 }
 
 OMR::OMR(cv::VideoCapture* camera)
-:cameraPointer(nullptr)
+:_cameraPointer(nullptr)
 {
-    cameraPointer = camera;
-    baseImage = cv::imread("rsrc/base.jpg");
+    _cameraPointer = camera;
+    _baseImage = cv::imread("rsrc/base.jpg");
 }
 
 void OMR::getImage()
 {
-    PreProcessImage preprocesser(&baseImage);
+    PreProcessImage preprocesser(&_baseImage);
 
-    if(cameraPointer != nullptr)
+    if(_cameraPointer != nullptr)
     {
         while(true)
         {
-            cameraPointer->read(currentImage);
-            cv::rotate(currentImage, currentImage, cv::ROTATE_90_CLOCKWISE);
+            _cameraPointer->read(_currentImage);
+            cv::rotate(_currentImage, _currentImage, cv::ROTATE_90_CLOCKWISE);
 
-            cv::imshow("window", currentImage);
-            cv::imshow("edgeImage", preprocesser.edgeImage);
+            cv::imshow("window", _currentImage);
+            cv::imshow("edgeImage", preprocesser._edgeImage);
             cv::waitKey(25); 
         }
     }
@@ -35,24 +35,30 @@ void OMR::getImage()
     // created for testing purposes .. will remove this section after finishing 
     else
     {
-        cv::Mat image = cv::imread("rsrc/image.jpg");
-        cv::Mat baseImage = cv::imread("rsrc/base.jpg");
+        cv::Mat image = cv::imread("rsrc/image-2.jpg");
+        cv::Mat transformedImage = cv::Mat();
+
 
         cv::rotate(image, image, cv::ROTATE_90_CLOCKWISE);
         
-        currentImage = image;
+        _currentImage = image;
 
         // get the image points
-        preprocesser.edgeDetect(currentImage);
-
-        cv::imshow("edgedetected", preprocesser.edgeImage);
+        preprocesser.edgeDetect(_currentImage);
+        
+        cv::imshow("edge_window", preprocesser._edgeImage);
         cv::waitKey(0);
 
-        preprocesser.approxPoly();
-        preprocesser.drawPoints(currentImage);
-
-        cv::imshow("window", currentImage); 
+        int returnValue = preprocesser.findPaper();
+        if(returnValue == 0)
+        {
+            preprocesser.drawPoints(_currentImage);        
+        }
+        cv::imshow("window", _currentImage); 
+        cv::imshow("transformed_image", preprocesser._transformedImage);
         cv::waitKey(0);
+    
+    
     }
 }
 

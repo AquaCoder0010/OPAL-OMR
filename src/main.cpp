@@ -6,7 +6,7 @@
 
 int main()
 {
-	cv::VideoCapture camera;
+	// cv::VideoCapture camera;
 	// CLI cli;
 
 	// if(cli.startCLI(camera) == false)

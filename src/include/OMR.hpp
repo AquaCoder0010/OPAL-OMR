@@ -7,9 +7,9 @@
 class OMR
 {
     private:
-        cv::Mat currentImage;
-        cv::Mat baseImage;
-        cv::VideoCapture* cameraPointer;
+        cv::Mat _currentImage;
+        cv::Mat _baseImage;
+        cv::VideoCapture* _cameraPointer;
     private:
         void getImage();
     public:

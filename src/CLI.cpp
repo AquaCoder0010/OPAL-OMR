@@ -10,7 +10,7 @@ CLI::CLI()
 
 bool CLI::autoStart(cv::VideoCapture& camera)
 {
-    std::string url = "http://192.168.1.4:4747/mjpegfeed?960x720";
+    std::string url = "http://192.168.1.6:4747/mjpegfeed?960x720";
     camera.open(url);
     return camera.isOpened();
 }
