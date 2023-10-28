@@ -18,6 +18,7 @@ OMR::OMR(cv::VideoCapture* camera)
 void OMR::getImage()
 {
     PreProcessImage preprocesser(&_baseImage);
+    Answer answer;
 
     if(_cameraPointer != nullptr)
     {
@@ -58,7 +59,11 @@ void OMR::getImage()
         cv::imshow("transformed_image", preprocesser._transformedImage);
         cv::waitKey(0);
     
-    
+        answer.setImage(preprocesser._transformedImage);   
+
+
+        cv::imshow("answerBlock", );
+        cv::waitKey(0);
     }
 }
 
