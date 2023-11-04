@@ -1,6 +1,6 @@
 #include "WrapFunction.hpp"
 
-cv::Mat wrap(cv::Mat inputImage, std::vector<cv::Point> controlPoints)
+cv::Mat wrap(cv::Mat& inputImage, std::vector<cv::Point>& controlPoints)
 {
     // wrap function
     cv::Mat outputImage;

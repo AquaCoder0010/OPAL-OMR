@@ -49,6 +49,9 @@ void OMR::getImage()
         
         cv::imshow("edge_window", preprocesser._edgeImage);
         cv::waitKey(0);
+        cv::destroyAllWindows();
+        // to do list, 
+        // instead of using integers for Error checking, add either exception classes or Enums for better code readability.
 
         int returnValue = preprocesser.findPaper();
         if(returnValue == 0)
@@ -58,11 +61,14 @@ void OMR::getImage()
         cv::imshow("window", _currentImage); 
         cv::imshow("transformed_image", preprocesser._transformedImage);
         cv::waitKey(0);
+        cv::destroyAllWindows();
     
         answer.setImage(preprocesser._transformedImage);   
-
-
-        cv::imshow("answerBlock", );
+        answer.preprocess();
+        
+        cv::imshow("transformed_image", preprocesser._transformedImage);
+        cv::imshow("answerBlock", answer._answerBlock);
+        cv::imshow("transformedAnswerBlock", answer._transformedAnswerBlock);
         cv::waitKey(0);
     }
 }

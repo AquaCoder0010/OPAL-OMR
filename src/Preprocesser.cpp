@@ -46,7 +46,7 @@ int PreProcessImage::findPaper()
     estimatedFindings = 1;
 
   std::vector<std::vector<cv::Point>> _possiblePoints;
-  float minSimilarityIndexValue = 0.7; 
+  float minSimilarityIndexValue = 0.5; 
 
   for (int i = _contourList.size() - 1; i > (_contourList.size() - 1 - estimatedFindings); i--)
   {
@@ -103,7 +103,7 @@ int PreProcessImage::findPaper()
     _imagePoints = _possiblePoints[paperIndex];
     _transformedImage = wrap(_inputImage, _imagePoints);
   }
-
+  
   if(similarityList[similarityList.size() - 1].second < minSimilarityIndexValue)
     return -1;
 

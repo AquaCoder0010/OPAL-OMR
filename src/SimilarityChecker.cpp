@@ -15,10 +15,16 @@ float SimilarityChecker::calculateSimilarityIndex(cv::Mat& image)
     cv::Mat baseHist = cv::Mat();
     cv::Mat imageHist = cv::Mat();
 
+    cv::Mat imageClone = image.clone();
+    cv::cvtColor(imageClone, imageClone, cv::COLOR_BGR2GRAY); 
+    cv::adaptiveThreshold(imageClone, imageClone, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY_INV, 15, 3);
+    cv::cvtColor(imageClone, imageClone, cv::COLOR_GRAY2BGR); 
+
+
     cv::Mat baseHSV = *_baseImage;
-    cv::Mat imageHSV = image;
+    cv::Mat imageHSV = imageClone;
     cv::cvtColor((*_baseImage), baseHSV, cv::COLOR_BGR2HSV);        
-    cv::cvtColor(image, image, cv::COLOR_BGR2HSV);        
+    cv::cvtColor(imageHSV, imageHSV, cv::COLOR_BGR2HSV);        
 
     // took source code from here : https://docs.opencv.org/4.5.5/d8/dc8/tutorial_histogram_comparison.html
 
