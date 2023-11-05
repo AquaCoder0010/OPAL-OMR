@@ -306,6 +306,7 @@ float Answer::getShadedIndex(cv::Rect bound)
     return currentIndex;
 }
 
+
 float Answer::evaluateAnswer()
 {   
     struct Choice
@@ -314,8 +315,7 @@ float Answer::evaluateAnswer()
         unsigned char choiceValue; 
     };
 
-
-    for(int i = 0; i < _extractedAnswerList.size(); i++)
+    for(int i = 0; i < _answerList.size(); i++)
     {
         std::vector<Choice> choiceList;
         choiceList.reserve(_extractedAnswerList[i].size());
@@ -323,8 +323,22 @@ float Answer::evaluateAnswer()
         for(int j = 0; j < _extractedAnswerList[i].size(); j++)
         {
             choiceList.emplace_back();
-            choiceList.back().value = getShadedIndex(_extractedAnswerList[i][j]);
+            if(i < 100)
+                choiceList.back().value = getShadedIndex(_extractedAnswerList[i][j]);
+            
+            if(i >= 100)
+            {
+                float shadedIndex = 0.f;
+                if(j == 2)
+                    shadedIndex = getShadedIndex(_extractedAnswerList[i][j]) - 0.2;
+                if(j != 2)
+                    shadedIndex = getShadedIndex(_extractedAnswerList[i][j]);
+
+                choiceList.back().value = shadedIndex;
+            }
+
             choiceList.back().choiceValue = static_cast<unsigned char>(65 + j);
+            std::cout << static_cast<unsigned char>(65 + j) << "  " << i << '\n';
         }
 
         std::sort(choiceList.begin(), choiceList.end(), [](Choice choice1, Choice choice2)
