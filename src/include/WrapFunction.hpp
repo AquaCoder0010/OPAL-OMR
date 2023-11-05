@@ -3,7 +3,8 @@
 #include <cmath>
 #include <vector>
 
-const float _wrappedHeight = 960;
-const float _wrappedWidth = 720;
+const int _wrappedHeight = 960;
+const int _wrappedWidth = 720;
 
 cv::Mat wrap(cv::Mat& inputImage, std::vector<cv::Point>& controlPoints);
+cv::Mat wrap(cv::Mat& inputImage, std::vector<cv::Point>& controlPoints, int p_wrappedHeight, int p_wrappedWidth);

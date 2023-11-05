@@ -36,7 +36,7 @@ void OMR::getImage()
     // created for testing purposes .. will remove this section after finishing 
     else
     {
-        cv::Mat image = cv::imread("rsrc/image-2.jpg");
+        cv::Mat image = cv::imread("rsrc/image-3.jpg");
         cv::Mat transformedImage = cv::Mat();
 
 
@@ -70,6 +70,11 @@ void OMR::getImage()
         cv::imshow("answerBlock", answer._answerBlock);
         cv::imshow("transformedAnswerBlock", answer._transformedAnswerBlock);
         cv::waitKey(0);
+        cv::destroyAllWindows();
+
+
+        answer.extractAnswerBounds();
+
     }
 }
 
