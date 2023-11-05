@@ -6,6 +6,26 @@ Answer::Answer()
 
 }
 
+bool Answer::loadAnswer(const std::string& filePath)
+{
+    std::vector<std::string> stringList;
+    std::ifstream file(filePath);
+
+    std::string currentString;
+
+    while(std::getline(file, currentString))
+        stringList.emplace_back(currentString);
+    
+    file.close();
+    for(std::string string : stringList)
+    {
+        if(string.length() > 1)
+            return false;
+        _answerList.emplace_back(static_cast<unsigned char>(string[0]));
+    }
+    return true;
+}
+
 void Answer::setImage(cv::Mat& image)
 {
     _answerBlock = image;
@@ -170,10 +190,161 @@ void Answer::extractAnswerBounds()
     });
 
 	_answerBounds.erase(enditer, _answerBounds.end());
-    for(auto& bound : _answerBounds)
-        cv::rectangle(_transformedAnswerBlock, bound, cv::Scalar(255, 0, 0), 2);
+
+    reorderAnswerBounds(); 
+}
+
+void Answer::reorderAnswerBounds()
+{
+    std::vector<std::vector<cv::Rect>> rowList;
+	std::vector<cv::Rect> currentRow;
+	std::vector<cv::Rect> sortedAnswerList = _answerBounds;
+	
+	int tolerance = 8;
+	std::sort(sortedAnswerList.begin(), sortedAnswerList.end(), [](const cv::Rect rect1, const cv::Rect rect2)
+	{
+		return rect1.y < rect2.y;
+	});
+
+
+	currentRow.emplace_back(sortedAnswerList[0]);
+	for(int i = 1; i < sortedAnswerList.size(); i++)
+	{
+		if( abs(sortedAnswerList[i].y - sortedAnswerList[i - 1].y) <= tolerance )
+			currentRow.emplace_back(sortedAnswerList[i]);
+
+		if( abs(sortedAnswerList[i].y - sortedAnswerList[i - 1].y > tolerance) )
+		{
+			rowList.emplace_back(currentRow);
+			currentRow.clear();
+			currentRow.emplace_back(sortedAnswerList[i]);	
+		}
+	}
+
+	if(currentRow.empty() == false)
+		rowList.emplace_back(currentRow);
+
+
+	std::vector<cv::Rect> sorted;	
+	for(auto& row : rowList)
+	{
+		std::sort(row.begin(), row.end(), [](const cv::Rect rect_1, const cv::Rect rect_2)
+		{	
+			return rect_1.x < rect_2.x;
+		});
+    	sorted.insert(sorted.end(), row.begin(), row.end());
+	}
+
+    int answerBoundSize = sorted.size();
+	int answerYCount = 20;
+	int answerXCount = answerBoundSize / answerYCount;
+	
+	std::vector<int> deletionList;
+	for(int i = 0; i < answerXCount; i++)
+	{
+		if(i % 6 == 0)
+		{	
+			deletionList.emplace_back(i);
+			for(int y = 0; y < answerYCount; y++)
+			{
+				int yIndex = (answerXCount +  y * answerXCount) + i;
+				if(yIndex < answerBoundSize)
+					deletionList.emplace_back(yIndex);
+			}
+		}
+	}
+
+	std::sort(deletionList.begin(), deletionList.end());
+
+	// delete the vectors from the list
+	for(auto i = deletionList.rbegin(); i != deletionList.rend(); i++)
+		sorted.erase(sorted.begin() + *i);
+
+    _answerBounds = sorted;    
+
+
+    // converting the answerbounds and then changing them into list of answerLists
+    int boundSize = _answerBounds.size();
+	int yCount = 20;
+	int xCount = boundSize / yCount;
+
+	for(int i = 0; i < 6; i++)
+	{
+		std::vector<cv::Rect> currentQuestion;
+		for(int j = 0; j < yCount; j++)
+		{
+			int questionIndex = j * xCount + (i * 5);
+			currentQuestion.emplace_back(_answerBounds[questionIndex]);
+
+			if(i != 5)	
+				for(int k = questionIndex + 1; k < (questionIndex + 4) + 1; k++)
+					currentQuestion.emplace_back(_answerBounds[k]);
+			
+			if(i == 5)
+				for(int k = questionIndex + 1; k < (questionIndex + 4); k++)
+					currentQuestion.emplace_back(_answerBounds[k]);
+
+			_extractedAnswerList.emplace_back(currentQuestion);
+			currentQuestion.clear();
+		}
+	}
+}
+
+
+float Answer::getShadedIndex(cv::Rect bound)
+{
+    float currentIndex = 0.f;
+    for(int y = bound.tl().y; y < bound.br().y; y++)
+        for(int x = bound.tl().x; x < bound.br().x; x++)
+        {
+			cv::Vec3b pixel = _transformedAnswerBlock.at<cv::Vec3b>(y, x);
+            int gray = (pixel[0] + pixel[1] + pixel[2]) /3;
+            currentIndex += gray;
+        }
+
+    currentIndex /= (bound.width * bound.height);
+    return currentIndex;
+}
+
+float Answer::evaluateAnswer()
+{   
+    struct Choice
+    {
+        float value = 0.f;
+        unsigned char choiceValue; 
+    };
+
+
+    for(int i = 0; i < _extractedAnswerList.size(); i++)
+    {
+        std::vector<Choice> choiceList;
+        choiceList.reserve(_extractedAnswerList[i].size());
+
+        for(int j = 0; j < _extractedAnswerList[i].size(); j++)
+        {
+            choiceList.emplace_back();
+            choiceList.back().value = getShadedIndex(_extractedAnswerList[i][j]);
+            choiceList.back().choiceValue = static_cast<unsigned char>(65 + j);
+        }
+
+        std::sort(choiceList.begin(), choiceList.end(), [](Choice choice1, Choice choice2)
+		{	
+			return choice1.value < choice2.value; 
+		});
+
+        if(choiceList[0].choiceValue == _answerList[i])
+        {
+            int answerIndex = std::abs(65 - choiceList[0].choiceValue);
+            cv::rectangle(_transformedAnswerBlock, _extractedAnswerList[i][answerIndex].tl(), _extractedAnswerList[i][answerIndex].br(), cv::Scalar(40, 255, 0), 2);
+            _evaluation++;
+        }
+
+        if(choiceList[0].choiceValue != _answerList[i])
+        {
+            int answerIndex = std::abs(65 - _answerList[i]);
+            cv::rectangle(_transformedAnswerBlock, _extractedAnswerList[i][answerIndex].tl(), _extractedAnswerList[i][answerIndex].br(), cv::Scalar(0, 0, 255), 2);
+        }
+    }
     
-    cv::imshow("transformedAnswerBlock", _transformedAnswerBlock);
-    cv::waitKey(0);
-    cv::destroyAllWindows();
+    return (_evaluation / _extractedAnswerList.size()) * 100;
 }

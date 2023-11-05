@@ -1,5 +1,7 @@
 #pragma once
 #include <opencv2/opencv.hpp>
+#include <fstream>
+#include <cmath>
 
 #include "WrapFunction.hpp"
 #include "PointOperations.hpp"
@@ -19,21 +21,27 @@ class Answer
 
         std::vector<cv::Rect> _answerBounds;
         std::vector<std::vector<cv::Point>> _answerContours;
-        float _evaluation = 0.f; 
     
         std::vector<cv::Vec4i> _horizontalLineList;
         std::vector<cv::Vec4i> _verticalLineList;
         std::vector<cv::Vec4i> _lineList;
+
+        std::vector<std::vector<cv::Rect>> _extractedAnswerList;
+        std::vector<unsigned char> _answerList;
+        float _evaluation = 0.f; 
     private:
         void cropAnswerBlock();
-        void sharpen();        
+        void sharpen();
+        void reorderAnswerBounds();
+        float getShadedIndex(cv::Rect bound);
     public:
         cv::Mat _answerBlock = cv::Mat();
         cv::Mat _transformedAnswerBlock = cv::Mat();
     public:
         Answer();
         void setImage(cv::Mat& image);
+        bool loadAnswer(const std::string& filePath);
         void preprocess();
         void extractAnswerBounds();
-        float evaluateAnswer(std::vector<cv::Rect> answerList);
+        float evaluateAnswer();
 };

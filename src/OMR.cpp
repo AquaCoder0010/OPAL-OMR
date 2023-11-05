@@ -19,6 +19,7 @@ void OMR::getImage()
 {
     PreProcessImage preprocesser(&_baseImage);
     Answer answer;
+    answer.loadAnswer("rsrc\\answer-text.txt");
 
     if(_cameraPointer != nullptr)
     {
@@ -74,7 +75,12 @@ void OMR::getImage()
 
 
         answer.extractAnswerBounds();
+        float evaluation = answer.evaluateAnswer();
 
+        std::cout << evaluation << '\n';
+        cv::imshow("answerBlock", answer._transformedAnswerBlock);
+        cv::waitKey(0);
+        cv::destroyAllWindows();
     }
 }
 
