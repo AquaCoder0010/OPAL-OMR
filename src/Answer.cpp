@@ -360,5 +360,5 @@ float Answer::evaluateAnswer()
         }
     }
     
-    return (_evaluation / _extractedAnswerList.size()) * 100;
+    return (_evaluation / _answerList.size()) * 100;
 }
