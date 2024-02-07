@@ -2,9 +2,12 @@
 #include <opencv2/opencv.hpp>
 #include <fstream>
 #include <cmath>
+#include <limits>
+
 
 #include "WrapFunction.hpp"
 #include "PointOperations.hpp"
+#include "sign.hpp"
 
 class Answer
 {
@@ -12,11 +15,10 @@ class Answer
         const int _transformedAnswerWidth = 565;
         const int _transformedAnswerHeight = 360;
 
-        
-        const int _xPos = 55;
-        const int _yPos = 395;
-        const int _height = 390;
-        const int _width = 640;
+        const int _xPos = 35;
+        const int _yPos = 435;
+        const int _height = 400;
+        const int _width = 665;
         cv::Rect _answerBlockRect = cv::Rect(_xPos, _yPos, _width, _height);
 
         std::vector<cv::Rect> _answerBounds;
@@ -31,7 +33,6 @@ class Answer
         float _evaluation = 0.f; 
     private:
         void cropAnswerBlock();
-        void sharpen();
         void reorderAnswerBounds();
         float getShadedIndex(cv::Rect bound);
     public:

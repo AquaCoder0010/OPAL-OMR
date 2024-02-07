@@ -2,21 +2,23 @@
 
 PreProcessImage::PreProcessImage(cv::Mat* baseImagePtr)
 {
-  if(baseImagePtr->empty() == true)
-    std::cout << "the shit transfered here" << std::endl;
-  
+  _baseImageCopy = baseImagePtr->clone();
   _similarityChecker.getBaseImage(baseImagePtr);
 }
 
-void PreProcessImage::edgeDetect(cv::Mat &image)
+void PreProcessImage::setInputImage(cv::Mat &image)
 {
-  _inputImage = image;
+  _inputImage = image.clone();
+}
+
+void PreProcessImage::edgeDetect()
+{
   float meanValue = 0.f;
   cv::Scalar meanPixelValue = cv::Scalar();
   cv::Mat dilationKernel = cv::Mat();
 
   dilationKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
-  _edgeImage = image.clone();
+  _edgeImage = _inputImage.clone();
   meanPixelValue = cv::mean(_edgeImage);
 
   for (int i = 0; i < meanPixelValue.channels; i++)
@@ -29,8 +31,33 @@ void PreProcessImage::edgeDetect(cv::Mat &image)
   cv::dilate(_edgeImage, _edgeImage, dilationKernel);
 }
 
+void PreProcessImage::edgeDetect(cv::Mat& image)
+{
+  float meanValue = 0.f;
+  cv::Scalar meanPixelValue = cv::Scalar();
+  cv::Mat dilationKernel = cv::Mat();
+
+  dilationKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+  meanPixelValue = cv::mean(image);
+
+  for (int i = 0; i < meanPixelValue.channels; i++)
+    meanValue += meanPixelValue[i];
+
+  meanValue /= meanPixelValue.channels;
+
+  cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
+  cv::Canny(image, image, meanValue, meanValue * 3, 3);
+  cv::dilate(image, image, dilationKernel);
+
+  
+}
+
+
 int PreProcessImage::findPaper()
 {
+  if(_possiblePoints.size() > 0)
+    _possiblePoints.erase(_possiblePoints.begin(), _possiblePoints.end());
+
   cv::findContours(_edgeImage, _contourList, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
   std::vector<cv::Rect> boundRect(_contourList.size());
@@ -45,7 +72,6 @@ int PreProcessImage::findPaper()
   if (estimatedFindings == 0)
     estimatedFindings = 1;
 
-  std::vector<std::vector<cv::Point>> _possiblePoints;
   float minSimilarityIndexValue = 0.5; 
 
   for (int i = _contourList.size() - 1; i > (_contourList.size() - 1 - estimatedFindings); i--)
@@ -80,15 +106,17 @@ int PreProcessImage::findPaper()
   }
   // minus one implies that it is an error
   if(_possiblePoints.size() == 0)
+  {
+    std::cout << "_possiblePoints size is zero, why is that the case??" << '\n';
     return -1;
+  }
   
   std::vector<std::pair<int, float>> similarityList;
   for(int i = 0; i < _possiblePoints.size(); i++)
   {
-    cv::Mat currentWrappedImage = wrap(_inputImage, _possiblePoints[i]);
-
+    cv::Mat currentWrappedImage = wrap(_inputImage, _possiblePoints[i]);    
     float currentSimiarityIndex = _similarityChecker.calculateSimilarityIndex(currentWrappedImage);
-
+    
     similarityList.emplace_back();
     similarityList.back().first = i;
     similarityList.back().second = currentSimiarityIndex;
@@ -105,7 +133,10 @@ int PreProcessImage::findPaper()
   }
   
   if(similarityList[similarityList.size() - 1].second < minSimilarityIndexValue)
+  {
+    std::cout << "Similarity List is less than zero, why is that the case again?" << '\n';
     return -1;
+  }
 
   return 0;
 }

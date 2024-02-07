@@ -10,7 +10,7 @@ CLI::CLI()
 
 bool CLI::autoStart(cv::VideoCapture& camera)
 {
-    std::string url = "http://192.168.1.6:4747/mjpegfeed?960x720";
+    std::string url = "http://192.168.1.7:4747/mjpegfeed?960x720";
     camera.open(url);
     return camera.isOpened();
 }
@@ -19,7 +19,6 @@ bool CLI::startCLI(cv::VideoCapture& camera)
 {
     std::cout << "OPAL OMR Version 0.0.2" << '\n';
     std::cout << "Enter IP address and port number" << '\n';
-
 
     bool connectionEntry = true;
     bool connected = true;

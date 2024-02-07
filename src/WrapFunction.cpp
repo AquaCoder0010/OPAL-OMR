@@ -22,7 +22,7 @@ cv::Mat wrap(cv::Mat& inputImage, std::vector<cv::Point>& controlPoints, int p_w
     // wrap function
     cv::Mat outputImage = inputImage.clone();
     cv::Point2f sourcePoints[4];
-	cv::Point2f distPoints[4] = { {0.f, 0.f} , {p_wrappedWidth, 0.f} , {0.f, p_wrappedHeight} , {p_wrappedWidth, p_wrappedHeight} };
+	cv::Point2f distPoints[4] = { {0.f, 0.f} , {(float)p_wrappedWidth, 0.f} , {0.f, (float)p_wrappedHeight} , {(float)p_wrappedWidth, (float)p_wrappedHeight} };
 	
 	for(int i = 0; i < controlPoints.size(); i++)
 		sourcePoints[i] = controlPoints[i];

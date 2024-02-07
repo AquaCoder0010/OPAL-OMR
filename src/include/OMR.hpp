@@ -3,6 +3,8 @@
 #include <iostream>
 
 #include "ImageFunctions.hpp"
+#include "Preprocesser.hpp"
+
 
 class OMR
 {
@@ -12,6 +14,7 @@ class OMR
         cv::VideoCapture* _cameraPointer;
     private:
         void getImage();
+        void drawEvaluation(cv::Mat& image, std::string bookletCode, std::string subjectCode, std::string registerNumber, float evaluation);
     public:
         OMR();
         OMR(cv::VideoCapture* camera);
