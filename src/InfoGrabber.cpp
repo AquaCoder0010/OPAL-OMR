@@ -345,9 +345,6 @@ void InfoGrabber::processRegisterNumber()
     _registerBounds.bounds = getBounds(registerImageBinary);
 }
 
-
-
-
 int InfoGrabber::getInfo()
 {
     preprocesser();

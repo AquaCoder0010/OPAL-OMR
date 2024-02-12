@@ -168,14 +168,12 @@ void Answer::extractAnswerBounds()
         
 		cv::line(transformedGridRemoved, point1, point2, cv::Scalar(255, 255, 255), 2.5);        
     }
-    cv::imshow("transformedGridRemoved", transformedGridRemoved);
     
     cv::cvtColor(transformedGridRemoved, transformedGridRemoved, cv::COLOR_BGR2GRAY);
     cv::adaptiveThreshold(transformedGridRemoved, transformedGridRemoved, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 15, 2);
-    cv::Mat openingKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
-	cv::morphologyEx(transformedGridRemoved, transformedGridRemoved, cv::MORPH_CLOSE, openingKernel);
+    cv::Mat closingKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+	cv::morphologyEx(transformedGridRemoved, transformedGridRemoved, cv::MORPH_CLOSE, closingKernel);
 
-    cv::imshow("binary", transformedGridRemoved);
 
     std::vector<std::vector<cv::Point>> answerBoundContours;
 
@@ -277,9 +275,7 @@ void Answer::reorderAnswerBounds()
         cv::putText(_transformedAnswerBlock, std::to_string(index), currentSorted.tl(), cv::FONT_HERSHEY_COMPLEX, 0.2,  cv::Scalar(0, 0, 255));
         index++;
     }
-    cv::imshow("_transformedAnswerBlock - bounds", _transformedAnswerBlock);
-    std::cout << _answerBounds.size() << '\n';
-
+    
     // converting the answerbounds and then changing them into list of answerLists
     answerBoundSize = _answerBounds.size();
 	answerYCount = 20;

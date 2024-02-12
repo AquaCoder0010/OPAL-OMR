@@ -1,35 +1,41 @@
 #include "SimilarityChecker.hpp"
 
 SimilarityChecker::SimilarityChecker()
+:_baseImage()
 {
-    _baseImage = nullptr;
+
 }
 
-void SimilarityChecker::getBaseImage(cv::Mat* baseImagePtr)
+void SimilarityChecker::setBaseImage(cv::Mat& baseImage)
 {
-    _baseImage = baseImagePtr;
-    cv::Mat baseHSV = *(_baseImage);    
-    cv::cvtColor((*_baseImage), baseHSV, cv::COLOR_BGR2HSV);        
-
-    cv::calcHist(&baseHSV, 1, channels, cv::Mat(),  _baseHist, 2, histSize, ranges);
-    cv::normalize(baseHSV, baseHSV, 0, 1, cv::NORM_MINMAX);    
+    _baseImage = baseImage;
 }
 
-float SimilarityChecker::calculateSimilarityIndex(cv::Mat& image)
+float SimilarityChecker::calSimilarity(cv::Mat& image)
 {
-    cv::Mat imageHist = cv::Mat();
+    float similarityIndex = 0.f;
+    float baseValue = 0.f;
 
-    cv::Mat imageClone = image.clone();
-    cv::cvtColor(imageClone, imageClone, cv::COLOR_BGR2GRAY); 
-    cv::adaptiveThreshold(imageClone, imageClone, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY_INV, 15, 3);
-    cv::cvtColor(imageClone, imageClone, cv::COLOR_GRAY2BGR); 
+    cv::Mat baseImageBinary = _baseImage.clone();    
+    cv::Mat imageBinary = image.clone();
 
-    cv::Mat imageHSV = imageClone;
-    cv::cvtColor(imageHSV, imageHSV, cv::COLOR_BGR2HSV);        
+    // making the image binary
+    cv::cvtColor(imageBinary, imageBinary, cv::COLOR_BGR2GRAY);
+    cv::equalizeHist(imageBinary, imageBinary);
+    cv::GaussianBlur(imageBinary, imageBinary, cv::Size(11, 11), 0, 0);
+    cv::adaptiveThreshold(imageBinary, imageBinary, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY_INV, 15, 3); 
+    
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
+    cv::morphologyEx(imageBinary, imageBinary, cv::MORPH_OPEN, kernel);
+    
+    // computing the baseImage binary
+    cv::cvtColor(baseImageBinary, baseImageBinary, cv::COLOR_BGR2GRAY);
+    cv::adaptiveThreshold(baseImageBinary, baseImageBinary, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY_INV, 15, 3); 
+    baseValue = (float)cv::countNonZero(baseImageBinary) / (baseImageBinary.cols * baseImageBinary.rows); 
+    
+    cv::Mat subtractedImage = baseImageBinary - imageBinary;
+    similarityIndex = cv::countNonZero(subtractedImage) / (float)(subtractedImage.cols * subtractedImage.rows);
+    similarityIndex /= baseValue;
 
-    cv::calcHist(&imageHSV, 1, channels, cv::Mat(), imageHist, 2, histSize, ranges);
-    cv::normalize(imageHSV, imageHSV, 0, 1, cv::NORM_MINMAX);
-
-    double similarityIndex = cv::compareHist(_baseHist, imageHist, cv::HISTCMP_CORREL);
-    return (float)similarityIndex;
+    return (1 - similarityIndex);
 }

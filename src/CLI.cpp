@@ -10,7 +10,7 @@ CLI::CLI()
 
 bool CLI::autoStart(cv::VideoCapture& camera)
 {
-    std::string url = "http://192.168.1.7:4747/mjpegfeed?960x720";
+    std::string url = "http://192.168.1.7:4747/video?960x720";
     camera.open(url);
     return camera.isOpened();
 }
@@ -27,7 +27,7 @@ bool CLI::startCLI(cv::VideoCapture& camera)
         std::cout << "IPAddress : "; std::getline(std::cin, ipAddress);
         std::cout << "Port : ";  std::getline(std::cin, port);
 
-        std::string url = ("http://") + ipAddress + (":") + port + ("/mjpegfeed?960x720");
+        std::string url = ("http://") + ipAddress + (":") + port + ("/video?960x720");
         
         camera.open(url);
         if(camera.isOpened() == false)

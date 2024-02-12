@@ -6,15 +6,15 @@
 
 int main()
 {
-	// cv::VideoCapture camera;
-	// CLI cli;
+	cv::VideoCapture camera;
+	CLI cli;
 
 	// if(cli.startCLI(camera) == false)
 	// 	return -1;
 	
-	// if(cli.autoStart(camera) == false)
-	// 	return -1;
+	if(cli.autoStart(camera) == false)
+		return -1;
 
-	OMR omr;
+	OMR omr(&camera);
 	return omr.run();
 }
