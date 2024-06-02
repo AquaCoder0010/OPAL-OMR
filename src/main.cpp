@@ -9,12 +9,9 @@ int main()
 	cv::VideoCapture camera;
 	CLI cli;
 
-	// if(cli.startCLI(camera) == false)
-	// 	return -1;
-	
-	if(cli.autoStart(camera) == false)
+	if(cli.startCLI(camera) == false)
 		return -1;
-
+	
 	OMR omr(&camera);
-	return omr.run();
+	return omr.run();	
 }

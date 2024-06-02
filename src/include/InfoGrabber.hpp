@@ -1,5 +1,9 @@
 #pragma once 
-#include <opencv2/opencv.hpp>
+
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+
 #include <cmath>
 #include <vector>
 
@@ -8,9 +12,6 @@
 #include "sign.hpp"
 #include "CalculateShade.hpp"
 
-// make it so that if it is empty, return a string that contains a negative numeral in front of it
-
-// remove this later.
 
 struct ImageBounds
 {  
@@ -28,7 +29,7 @@ struct SectionChoice
 class InfoGrabber
 {
     private:
-        const cv::Rect _studentInfoBlock = cv::Rect(200, 210, 520, 240);
+        const cv::Rect _studentInfoBlock = cv::Rect(200, 200, 520, 265);
         const int _codeImageWidth = 100;
         const int _codeImageHeight = 215; 
         

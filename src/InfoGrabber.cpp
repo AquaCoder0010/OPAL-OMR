@@ -14,23 +14,45 @@ void InfoGrabber::setCurrentImage(cv::Mat& image)
 cv::Mat InfoGrabber::edgeDetect(cv::Mat& image)
 {
     // make a utility function instead of rewriting the same code
-    float meanValue = 0.f;
-    cv::Scalar meanPixelValue = cv::Scalar();
+    int imageWidth = image.cols;
+    int imageHeight = image.rows;
+
     cv::Mat edgeImage = cv::Mat();
-
+    cv::Mat edgeImageClone = cv::Mat();
+    
+    edgeImageClone = image.clone();
     edgeImage = image.clone();
-    meanPixelValue = cv::mean(edgeImage);
+    cv::cvtColor(edgeImageClone, edgeImageClone, cv::COLOR_BGR2GRAY);
+    cv::medianBlur(edgeImageClone, edgeImageClone, 3);
+    cv::adaptiveThreshold(edgeImageClone, edgeImageClone, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY_INV, 15, 2);
 
-    for (int i = 0; i < meanPixelValue.channels; i++)
-        meanValue += meanPixelValue[i];
+    // cv::Mat verticalImage = edgeImageClone.clone();
+    // cv::Mat verticalKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(1, verticalImage.cols / 30));
+    // cv::Mat closingKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
 
-    meanValue /= meanPixelValue.channels;
+    // cv::erode(verticalImage, verticalImage, verticalKernel, cv::Point(-1, -1));
+    // cv::dilate(verticalImage, verticalImage, verticalKernel, cv::Point(-1, -1));
 
-    cv::cvtColor(edgeImage, edgeImage, cv::COLOR_BGR2GRAY);
-    cv::equalizeHist(edgeImage, edgeImage);
-    cv::GaussianBlur(edgeImage, edgeImage, cv::Size(7, 7), 0, 0);
-    cv::Canny(edgeImage, edgeImage, meanValue, meanValue * 3, 5);    
-    return edgeImage;
+    // cv::erode(verticalImage, verticalImage, closingKernel, cv::Point(-1, -1));
+    // cv::dilate(verticalImage, verticalImage, closingKernel, cv::Point(-1, -1));
+
+    // int xPos = 0;
+    // for(int i = 0; i < imageWidth; i++)
+    // {
+    //     uchar currentPixel = verticalImage.at<uchar>(imageHeight/2, i);
+    //     if(currentPixel > 0)
+    //     {
+    //         xPos = i;
+    //         std::cout << i << "  " << imageHeight/2 << '\n';
+    //         break;
+    //     }
+    // }
+    // cv::Rect whiteRegion = cv::Rect(0, 0, xPos - 5, edgeImageClone.rows);     
+    // edgeImageClone(whiteRegion).setTo(cv::Scalar(0, 0, 0));
+    
+    // cv::imshow("edgeImageClone", edgeImageClone);
+    // cv::waitKey(0);
+    return edgeImageClone;
 }
 
 cv::Mat InfoGrabber::removeOutline(cv::Mat& image)
@@ -207,7 +229,6 @@ std::string InfoGrabber::evaluateCode(cv::Mat& image, std::vector<std::vector<cv
         int id;
     };
 
-
     // for(int j = 0; j < sectionList.size(); j++)
     // {
     //     std::cout << "( ";      
@@ -238,12 +259,8 @@ std::string InfoGrabber::evaluateCode(cv::Mat& image, std::vector<std::vector<cv
 
 void InfoGrabber::preprocesser()
 {
-    if(_currentImage.empty() == true)
-        std::cout << "Image is empty" << '\n';
-
     std::vector<std::vector<cv::Point>> currentContours;
     cv::Mat binaryImage = edgeDetect(_currentImage);
-
 
     cv::findContours(binaryImage, currentContours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
     std::sort(currentContours.begin(), currentContours.end(), [&](std::vector<cv::Point> contour1, std::vector<cv::Point> contour2)
@@ -260,9 +277,8 @@ void InfoGrabber::preprocesser()
         return cv::boundingRect(contour1).tl().x < cv::boundingRect(contour2).tl().x;
     });
     currentContours.erase(currentContours.begin() + 1); // removes the second element
-
-
-
+    cv::drawContours(_currentImage, currentContours, -1, cv::Scalar(0, 0, 255), 2);
+    
     for(int i = 0; i < currentContours.size(); i++)
     {
         std::vector<cv::Point> currentPoly;
@@ -273,6 +289,7 @@ void InfoGrabber::preprocesser()
 
         if(currentPoly.size() != 4)
         {
+            cv::destroyAllWindows();
             std::cout << "Qualilateral not detected, error within the studdent Info image... " << '\n';
             std::cin.get();
             exit(-1);
@@ -309,9 +326,8 @@ void InfoGrabber::preprocesser()
             _codeImagePoints.emplace_back(currentPoly[getMinSum(pointOperationsList)]);
             _codeImagePoints.emplace_back(currentPoly[getMaxSub(pointOperationsList)]);
             _codeImagePoints.emplace_back(currentPoly[getMinSub(pointOperationsList)]);
-            _codeImagePoints.emplace_back(currentPoly[getMaxSum(pointOperationsList)]);            
+            _codeImagePoints.emplace_back(currentPoly[getMaxSum(pointOperationsList)]);
         }
-        // TO DO add an exception handler here. or find another more relaiable method for conversion,
     }
     _codeImage = wrap(_currentImage, _codeImagePoints, _codeImageHeight, _codeImageWidth);
     _registerImage = wrap(_currentImage, _registerImagePoints, _registerImageHeight, _registerImageWidth);

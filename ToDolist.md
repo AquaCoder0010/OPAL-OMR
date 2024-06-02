@@ -1,10 +1,10 @@
 TO do list
 
-1. [FINISHED]Fix the bug of the similarity index finder
-    Finished, No Idea on what I have done. I should check out the github repo without commiting and see if I could replicate the error again to further understand it.
+1. [FINISHED] Fix the bug of the similarity index finder
+        Histogram comparison - [FAILED]
+        Pixel by pixel comparison - [FAILED] somewhat
+        average hashing algorithm - 
 
-        Change Happened on the similarity list checker function.
-        
 2. [FINISHED]Rewrite the answer bound image locator
     works on images with low quality. Should test this on a video soon
 
@@ -14,19 +14,19 @@ TO do list
 4. [REDACTED] Write a more better version of the contour to qualilateral approximation.
 
 
-5. Write an answer list validation code
+5. [REDACTED] Write an answer list validation code
 
 
-6. Change the entire code to useable untility functions
+6. [REDACTED] Change the entire code to useable untility functions
 
 
-7. Test for video interface with the following edge cases
+7. [REDACTED] Test for video interface with the following edge cases
     Brightness, Bright room, dark room
     Different angle locator, 
     low image quality
     High image quality
 
 
-8. Write integration compatible code for the GUI.
+8. [REDACTED] Write integration compatible code for the GUI.
 
 

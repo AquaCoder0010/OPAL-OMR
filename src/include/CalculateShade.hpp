@@ -1,7 +1,8 @@
+#pragma once
 #include <opencv2/opencv.hpp>
 
 
-static float calculateShade(cv::Mat& image, cv::Rect bound)
+static inline float calculateShade(cv::Mat& image, cv::Rect bound)
 {
     float currentIndex = 0.f;
     for(int y = bound.tl().y; y < bound.br().y; y++)

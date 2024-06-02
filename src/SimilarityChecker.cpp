@@ -1,41 +1,50 @@
 #include "SimilarityChecker.hpp"
 
 SimilarityChecker::SimilarityChecker()
-:_baseImage()
+:_baseImageHash()
 {
 
 }
 
 void SimilarityChecker::setBaseImage(cv::Mat& baseImage)
 {
-    _baseImage = baseImage;
+    _baseImageHash = aHash(baseImage);
+    std::cout << _baseImageHash << '\n';
 }
+
 
 float SimilarityChecker::calSimilarity(cv::Mat& image)
 {
-    float similarityIndex = 0.f;
-    float baseValue = 0.f;
+    return 1 - compare(aHash(image), _baseImageHash);
+}
 
-    cv::Mat baseImageBinary = _baseImage.clone();    
-    cv::Mat imageBinary = image.clone();
 
-    // making the image binary
-    cv::cvtColor(imageBinary, imageBinary, cv::COLOR_BGR2GRAY);
-    cv::equalizeHist(imageBinary, imageBinary);
-    cv::GaussianBlur(imageBinary, imageBinary, cv::Size(11, 11), 0, 0);
-    cv::adaptiveThreshold(imageBinary, imageBinary, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY_INV, 15, 3); 
+std::string SimilarityChecker::aHash(cv::Mat& image)
+{
+    cv::Mat imageClone = image.clone();
+    if(imageClone.channels() == 3)
+        cv::cvtColor(imageClone, imageClone, cv::COLOR_BGR2GRAY);
     
-    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
-    cv::morphologyEx(imageBinary, imageBinary, cv::MORPH_OPEN, kernel);
-    
-    // computing the baseImage binary
-    cv::cvtColor(baseImageBinary, baseImageBinary, cv::COLOR_BGR2GRAY);
-    cv::adaptiveThreshold(baseImageBinary, baseImageBinary, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY_INV, 15, 3); 
-    baseValue = (float)cv::countNonZero(baseImageBinary) / (baseImageBinary.cols * baseImageBinary.rows); 
-    
-    cv::Mat subtractedImage = baseImageBinary - imageBinary;
-    similarityIndex = cv::countNonZero(subtractedImage) / (float)(subtractedImage.cols * subtractedImage.rows);
-    similarityIndex /= baseValue;
+    cv::resize(imageClone, imageClone, cv::Size(8, 8));
+    cv::normalize(imageClone, imageClone, 0, 1, cv::NORM_MINMAX, CV_32F);
+    int averageValue = cv::mean(imageClone)[0];
 
-    return (1 - similarityIndex);
+    std::bitset<64> hashBitSet;
+    for (int y =  0; y < imageClone.rows; ++y) {
+        for (int x =  0; x < imageClone.cols; ++x) {
+            hashBitSet[(y *  8) + x] = (imageClone.at<float>(y, x) > averageValue);
+        }
+    }
+    return hashBitSet.to_string(); 
+}
+
+float SimilarityChecker::compare(std::string hash1, std::string hash2)
+{
+    if(hash1.length() != hash2.length())
+        return -1.f;
+    int dist =  0;
+    for (size_t i =  0; i < hash1.length(); ++i) {
+        dist += (int)(hash1[i] != hash2[i]);
+    }
+    return (float)(dist) / hash1.length();
 }

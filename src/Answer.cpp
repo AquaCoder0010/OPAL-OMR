@@ -35,16 +35,16 @@ void Answer::preprocess()
     cv::Mat uncroppedAnswerBlock = _answerBlock.clone(); 
     _answerBlock = uncroppedAnswerBlock(_answerBlockRect).clone();
 
+
     // Section of this code, starts by first creating a threshold of the image and then making it straight using 
     // affline transformation
 
     cv::Mat answerBlockClone = _answerBlock; 
+    
 
     cv::cvtColor(answerBlockClone, answerBlockClone, cv::COLOR_BGR2GRAY);
-    cv::equalizeHist(answerBlockClone, answerBlockClone);
-
-    cv::GaussianBlur(answerBlockClone, answerBlockClone, cv::Size(3, 3), 1, 1);
-	cv::adaptiveThreshold(answerBlockClone, answerBlockClone, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY_INV, 15, 3);        
+    cv::GaussianBlur(answerBlockClone, answerBlockClone, cv::Size(3, 3), 0, 0);
+    cv::adaptiveThreshold(answerBlockClone, answerBlockClone, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY_INV, 15, 3);        
 
     cv::findContours(answerBlockClone, _answerContours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
     std::sort(_answerContours.begin(), _answerContours.end(), [&](std::vector<cv::Point> contour1, std::vector<cv::Point> contour2)
@@ -54,8 +54,6 @@ void Answer::preprocess()
         return area1 < area2; 
     });
     
-    // max possible size for the
-
     std::vector<std::vector<cv::Point>>::iterator enditer = std::remove_if(_answerContours.begin(), _answerContours.end(), [](std::vector<cv::Point> contour) 
 	{
         int smallAreaLimit = 2000;
@@ -64,12 +62,11 @@ void Answer::preprocess()
     });
 
     _answerContours.erase(enditer, _answerContours.end());
+    cv::drawContours(_answerBlock, _answerContours, -1, cv::Scalar(0, 0, 255), 1);
 
     std::vector<cv::Point> answerBlockPoly;
     std::vector<cv::Point> answerBlockPoints;
     float arcLength = 0.f;
-
-    cv::drawContours(_answerBlock, _answerContours, -1, cv::Scalar(0, 0, 255));
 
     arcLength = cv::arcLength(_answerContours[_answerContours.size() - 1], true);
     cv::approxPolyDP(_answerContours[_answerContours.size() - 1], answerBlockPoly, 0.02 * arcLength, true);
@@ -98,17 +95,25 @@ void Answer::preprocess()
     {
         std::cout << answerBlockPoly.size() << '\n'; 
         // handle error for not identifing the answer block;
-        std::cout << "could not identify the answer block contour and approximate it to a qualialteral" << '\n';  
+        cv::destroyAllWindows();
+        std::cout << "Answer block qualilateral error" << '\n';  
+        std::cin.get();
+        exit(-1);
     }
 }
 
 void Answer::extractAnswerBounds()
 {
+    cv::Mat grid = cv::Mat();
     cv::Mat transformedAnswerBinary = _transformedAnswerBlock.clone(); 
     cv::Mat transformedGridRemoved = _transformedAnswerBlock.clone();
+    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
 
-    cv::cvtColor(transformedAnswerBinary, transformedAnswerBinary, cv::COLOR_BGR2GRAY);
+
+    cv::cvtColor(transformedAnswerBinary, transformedAnswerBinary, cv::COLOR_BGR2GRAY);    
+    clahe->apply(transformedAnswerBinary, transformedAnswerBinary);
     cv::adaptiveThreshold(transformedAnswerBinary, transformedAnswerBinary, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 15, 2);
+    
 
     cv::Mat horizontalLines = transformedAnswerBinary.clone();
     cv::Mat verticalLines = transformedAnswerBinary.clone();
@@ -118,32 +123,39 @@ void Answer::extractAnswerBounds()
 	cv::erode(horizontalLines, horizontalLines, morphKernelHorizontal);
 	cv::dilate(horizontalLines, horizontalLines, morphKernelHorizontal);
 
+    cv::dilate(horizontalLines, horizontalLines, morphKernelHorizontal);
+    cv::erode(horizontalLines, horizontalLines, morphKernelHorizontal);
+    
+    cv::dilate(horizontalLines, horizontalLines, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3)));
+    cv::erode(horizontalLines, horizontalLines, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3)));
+    
 
 	int verticalLength = verticalLines.cols / 30;
 	cv::Mat morphKernelVertical = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(1, verticalLength));
 	cv::erode(verticalLines, verticalLines, morphKernelVertical);
 	cv::dilate(verticalLines, verticalLines, morphKernelVertical);
 
-	cv::Mat dilationKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2, 2));
-	cv::dilate(horizontalLines, horizontalLines, dilationKernel);
-	cv::dilate(verticalLines, verticalLines, dilationKernel);
+	cv::dilate(verticalLines, verticalLines, morphKernelVertical);
+    cv::erode(verticalLines, verticalLines, morphKernelVertical);
 
-    cv::HoughLinesP(horizontalLines, _horizontalLineList, 1, CV_PI/180, _transformedAnswerWidth * 0.3, _transformedAnswerWidth * 0.3, _transformedAnswerWidth * 0.6);
-	cv::HoughLinesP(verticalLines, _verticalLineList, 1, CV_PI/180, _transformedAnswerHeight * 0.3, _transformedAnswerHeight *0.3, _transformedAnswerHeight * 0.6);
+    cv::dilate(verticalLines, verticalLines, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3)));
+    cv::erode(verticalLines, verticalLines, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3)));
+    
 
-
+    cv::HoughLinesP(horizontalLines, _horizontalLineList, 1, CV_PI/180, 130);
+    cv::HoughLinesP(verticalLines, _verticalLineList, 1, CV_PI/180, 130);
 
     _lineList.resize(_horizontalLineList.size());
 	_lineList.insert(_lineList.begin(), _horizontalLineList.begin(), _horizontalLineList.end()); 
     _lineList.insert(_lineList.end(), _verticalLineList.begin(), _verticalLineList.end());
 
-    
+
     for(auto& line : _lineList)
 	{
 		cv::Point point1 = cv::Point(line[0], line[1]);
 		cv::Point point2 = cv::Point(line[2], line[3]);
 
-        int extrudeValue = sign(point2.x - point1.x)*200;
+        int extrudeValue = sign(point2.x - point1.x)*500;
 
 		float slope = 0.f;
         if(point1.x != point2.x)
@@ -159,26 +171,84 @@ void Answer::extractAnswerBounds()
             point1 = point1Changed;
             point2 = point2Changed;
         }
+
+		// increase the overall lines size
+		//
+		// if(point1.x == point2.x)
+		// {
+		// 	point2.y -= 60;
+		// 	point1.y += 60;
+		// }
+
+		// if(point1.y == point2.y && (point1.x < point2.x))
+		// {
+		// 	point1.x -= 60;
+		// 	point2.x += 60;
+		// }
+
+		// if(point1.y == point2.y && (point1.x > point2.x))
+		// {
+		// 	point1.x += 60;
+		// 	point2.x -= 60;
+		// }
+		// //
+		cv::line(transformedGridRemoved, point1, point2, cv::Scalar(255, 255, 255), 4);
+
+        // cv::Point point3, point4 = cv::Point();
+        // int extrudeValue = 1000;
+
+        // if(point1.x != point2.x)
+        // {
+        //     float angle = atan2(point1.y - point2.y, point1.x - point2.x);
+
+        //     point3.x = point1.x + extrudeValue*cos(angle);
+        //     point3.y = point1.y + extrudeValue*sin(angle);
+
+
+        //     point4.x = point1.x - extrudeValue*cos(angle);
+        //     point4.y = point1.y - extrudeValue*sin(angle);
+        // }
         
-        else if(point1.x == point2.x)
-        {
-            point1.x = point1.x - extrudeValue;
-            point2.x = point2.x + extrudeValue;
-        }
+        // else if(point1.x == point2.x)
+        // {
+        //     point3.y = point1.y + extrudeValue;
+        //     point4.y = point2.y - extrudeValue;
+        // }
         
-		cv::line(transformedGridRemoved, point1, point2, cv::Scalar(255, 255, 255), 2.5);        
+        // cv::Vec4i v = line; 
+        // cv::Point from(v[0], v[1]);
+        // cv::Point to(v[2], v[3]);
+
+        // cv::Point2f directionFrom = cv::Point2f(from.x - to.x, from.y - to.y);
+        // cv::Point2f directionTo = cv::Point2f(to.x - from.x, to.y - from.y);
+        // float lengthFrom = sqrt(directionFrom.dot(directionFrom));
+        // float lengthTo = sqrt(directionTo.dot(directionTo));
+        // directionFrom /= lengthFrom;
+        // directionTo /= lengthTo; 
+
+        // // Define the extension lengths
+        // float extensionLengthFrom = 500.0f;
+        // float extensionLengthTo =  500.0f;
+
+        // // Create the displacement vectors and calculate the new coordinates
+        // cv::Point2f displacementFrom = directionFrom * extensionLengthFrom;
+        // cv::Point2f displacementTo = directionTo * extensionLengthTo;
+        // cv::Point2f newStart = cv::Point2f(from.x - displacementFrom.x, from.y - displacementFrom.y);
+        // cv::Point2f newEnd = cv::Point2f(to.x + displacementTo.x, to.y + displacementTo.y);
+
+        // // Draw the original and extended lines
+        // cv::line(transformedGridRemoved, from, to, cv::Scalar(255,  255,  255),  3);
+        // cv::line(transformedGridRemoved, newStart, to, cv::Scalar(255,  255,  255),  3);
+        // cv::line(transformedGridRemoved, from, newEnd, cv::Scalar(255,  255,  255),  3);
+
     }
-    
     cv::cvtColor(transformedGridRemoved, transformedGridRemoved, cv::COLOR_BGR2GRAY);
     cv::adaptiveThreshold(transformedGridRemoved, transformedGridRemoved, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 15, 2);
-    cv::Mat closingKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
-	cv::morphologyEx(transformedGridRemoved, transformedGridRemoved, cv::MORPH_CLOSE, closingKernel);
 
-
+    
     std::vector<std::vector<cv::Point>> answerBoundContours;
 
     cv::findContours(transformedGridRemoved, answerBoundContours, cv::RETR_LIST, cv::CHAIN_APPROX_TC89_L1);
-
     float averageArea = 0.f;    
     for(auto& contour : answerBoundContours)
     {
@@ -186,9 +256,6 @@ void Answer::extractAnswerBounds()
         averageArea += cv::boundingRect(contour).width * cv::boundingRect(contour).height; 
     }
     averageArea /= _answerBounds.size();
-    
-    std::cout << averageArea << '\n'; 
-
 
     std::vector<cv::Rect>::iterator enditer = std::remove_if(_answerBounds.begin(), _answerBounds.end(), [&](cv::Rect rect_1) 
 	{
@@ -196,10 +263,17 @@ void Answer::extractAnswerBounds()
         return (rect_1.width * rect_1.height) <= smallAreaLimit;    // remove small rectangles numbers
     });
 	_answerBounds.erase(enditer, _answerBounds.end());
-    // draw exception here
-    std::cout << _answerBounds.size() << '\n';
+    // // draw exception here
+    // if(_answerBounds.size() != 720)
+    // {
+    //     std::cout << "Error while finding answer bound.." << '\n';
+    //     std::cout << _answerBounds.size() << '\n';
+    //     std::cin.get();
+    //     exit(-1);
+    // }
     
     reorderAnswerBounds(); 
+    cv::Mat copy = _transformedAnswerBlock.clone();
 }
 
 void Answer::reorderAnswerBounds()
@@ -267,14 +341,6 @@ void Answer::reorderAnswerBounds()
 		sorted.erase(sorted.begin() + *i);
 
     _answerBounds = sorted;    
-
-    int index = 0;
-    for(auto currentSorted : _answerBounds)
-    {
-        cv::rectangle(_transformedAnswerBlock, currentSorted.tl(), currentSorted.br(), cv::Scalar(255, 0, 0), 1);
-        cv::putText(_transformedAnswerBlock, std::to_string(index), currentSorted.tl(), cv::FONT_HERSHEY_COMPLEX, 0.2,  cv::Scalar(0, 0, 255));
-        index++;
-    }
     
     // converting the answerbounds and then changing them into list of answerLists
     answerBoundSize = _answerBounds.size();
@@ -298,21 +364,6 @@ void Answer::reorderAnswerBounds()
 	}
 }
 
-float Answer::getShadedIndex(cv::Rect bound)
-{
-    float currentIndex = 0.f;
-    for(int y = bound.tl().y; y < bound.br().y; y++)
-        for(int x = bound.tl().x; x < bound.br().x; x++)
-        {
-			cv::Vec3b pixel = _transformedAnswerBlock.at<cv::Vec3b>(y, x);
-            int gray = (pixel[0] + pixel[1] + pixel[2]) /3;
-            currentIndex += gray;
-        }
-
-    currentIndex /= (bound.width * bound.height);
-    return currentIndex;
-}
-
 
 float Answer::evaluateAnswer()
 {   
@@ -330,7 +381,7 @@ float Answer::evaluateAnswer()
         for(int j = 0; j < _extractedAnswerList[i].size(); j++)
         {
             choiceList.emplace_back();
-            choiceList.back().value = getShadedIndex(_extractedAnswerList[i][j]);
+            choiceList.back().value = calculateShade(_transformedAnswerBlock, _extractedAnswerList[i][j]);
             choiceList.back().choiceValue = static_cast<unsigned char>(65 + j);
         }
 
@@ -351,7 +402,6 @@ float Answer::evaluateAnswer()
             int answerIndex = std::abs(65 - _answerList[i]);
             cv::rectangle(_transformedAnswerBlock, _extractedAnswerList[i][answerIndex].tl(), _extractedAnswerList[i][answerIndex].br(), cv::Scalar(0, 0, 255), 2);
         }
-    }
-    
+    }   
     return (_evaluation / _answerList.size()) * 100;
 }

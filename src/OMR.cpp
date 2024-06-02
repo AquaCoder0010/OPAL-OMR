@@ -18,36 +18,45 @@ void OMR::getImage()
     Preprocessor preprocessor_;
     Answer answer;
     InfoGrabber infoGrabber;
-
+    // 
     answer.loadAnswer("rsrc\\answer-text.txt") ? std::cout << "Answer file loaded" << '\n' : std::cout << "Error answer file not loaded";
     cv::Mat custBaseImage = cv::imread("rsrc/sim/baseImage.jpg");
     preprocessor_.setBaseImage(custBaseImage);
 
-    // cv::Size displaySize(640, 640);
-
-    // bool testdummy = true;
-
     if (_cameraPointer != nullptr)
     {
         cv::Mat transImage = cv::Mat();
+        cv::Mat transImageHC = cv::Mat();
         while (true)
         {
             _cameraPointer->read(_currentImage);
 
             cv::rotate(_currentImage, _currentImage, cv::ROTATE_90_CLOCKWISE);
             cv::Mat transformedImage = preprocessor_.getTransformedImage(_currentImage);
+            cv::Size size(720, 640);
 
-            cv::imshow("_currentImage", _currentImage);
-            cv::imshow("transformedImage", transformedImage);
-            if (cv::waitKey(25) == 10)
+            cv::Mat transformedImageResized = cv::Mat();
+            cv::Mat currentImageResized = cv::Mat();
+
+            cv::resize(transformedImage, transformedImageResized, cv::Size(720, 700));
+            cv::resize(_currentImage, currentImageResized, cv::Size(720, 700));
+        
+            cv::imshow("_currentImage", currentImageResized);
+            cv::imshow("transformedImage", transformedImageResized);
+            if (cv::waitKey(25) == 13)
             {
-                if (cv::countNonZero(transformedImage) != 0)
+                cv::Mat transformedImageGray = cv::Mat();
+                // changing this to grayscale for countNonZero
+                cv::cvtColor(transformedImage, transformedImageGray, cv::COLOR_BGR2GRAY);
+                if (cv::countNonZero(transformedImageGray) != 0)
                 {
                     transImage = transformedImage;
+                    cv::destroyAllWindows();
                     break;
                 }
             }
         }
+
         infoGrabber.setCurrentImage(transImage);
         infoGrabber.getInfo();
 
@@ -59,17 +68,27 @@ void OMR::getImage()
 
         cv::Scalar evaluationColor(0, 255 * (evaluation / 100), 255 * (1 - (evaluation / 100)));
         cv::Scalar color(0, 255, 0);
-        cv::putText(transImage, std::to_string(static_cast<int>(evaluation)), cv::Point(transImage.cols / 2, transImage.rows / 0.5), cv::FONT_HERSHEY_PLAIN, 5, evaluationColor, 4);
+        cv::putText(transImage, std::to_string(static_cast<int>(evaluation)), cv::Point(transImage.cols / 2, transImage.rows / 2), cv::FONT_HERSHEY_PLAIN, 5, evaluationColor, 4);
 
-        cv::putText(transImage, ("BC:" + infoGrabber.getBookletCode()), cv::Point(transImage.cols / 4 - 25, transImage.rows / 5), cv::FONT_HERSHEY_PLAIN, 5, color, 4);
-        cv::putText(transImage, ("SC:" + infoGrabber.getSubjectCode()), cv::Point(transImage.cols / 4 - 50, transImage.rows / 5), cv::FONT_HERSHEY_PLAIN, 5, color, 4);
+        cv::putText(transImage, ("BC:" + infoGrabber.getBookletCode()), cv::Point(transImage.cols / 4 + 100, transImage.rows / 5), cv::FONT_HERSHEY_PLAIN, 5, color, 4);
+        cv::putText(transImage, ("SC:" + infoGrabber.getSubjectCode()), cv::Point(transImage.cols / 4 - 235, transImage.rows / 5), cv::FONT_HERSHEY_PLAIN, 5, color, 4);
 
         cv::putText(transImage, ("RN : " + infoGrabber.getRegisterNumber()), cv::Point(infoGrabber._registerImagePoints[0].x, infoGrabber._registerImagePoints[0].y + 30), cv::FONT_HERSHEY_PLAIN, 5, color, 4);
 
+        cv::Mat currentImageResized = cv::Mat();
+        cv::Mat transImageResized = cv::Mat();
+        
+        cv::resize(_currentImage, currentImageResized, cv::Size(720, 700));
+        cv::resize(transImage, transImageResized, cv::Size(720, 700));
+        
         cv::imshow("currentImage", _currentImage);
-        cv::imshow("transImage", transImage);
+        cv::imshow("transImage", transImageResized);
+        cv::imshow("Answer", answer._transformedAnswerBlock);
         cv::waitKey(0);
         cv::destroyAllWindows();
+
+        cv::imwrite("outputImage.png", transImage);
+        
     }
 
     // if(_cameraPointer != nullptr)
